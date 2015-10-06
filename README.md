@@ -2,6 +2,8 @@
 
 This is for running a [Consul](http://consul.io/) cluster on [CoreOS](http://coreos.com) using etcd to bootstrap it.
 
+[![Docker Repository on Quay.io](https://quay.io/repository/smuth4/consul-coreos/status "Docker Repository on Quay.io")](https://quay.io/repository/smuth4/consul-coreos)
+
 ## Why?
 
 While CoreOS already has etcd built in and it is very similar to Consul, it is missing some of the service discovery features offered by Consul. Namely the service catalog and service health checking. These things are nice to have.
@@ -27,7 +29,7 @@ Fleet will run one Consul container per CoreOS node, so you probably want to sta
 
 ## Implementation
 
-It uses etcd to coordinate the bootstrapping of a Consul cluster on CoreOS. It runs Consul inside Docker containers (as nature intended) using [progrium's excellent Consul Docker image](https://github.com/progrium/docker-consul).
+It uses etcd to coordinate the bootstrapping of a Consul cluster on CoreOS. My fork (smuth4) uses curl to control etcd2, rather than running docker-in-docker like [progrium's excellent Consul Docker image](https://github.com/progrium/docker-consul).
 
 ## TODO
 
