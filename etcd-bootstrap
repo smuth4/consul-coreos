@@ -1,33 +1,35 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 this_ip="$1"; shift
 this_machine="$1"; shift
 consul_args="$@"
 
-etcdctl="docker run --net=host --rm cap10morgan/etcdctl:0.4.6"
-conntrack="docker run --net=host --privileged --rm cap10morgan/conntrack"
+etcdcurl="curl -sL http://${this_ip}:4001/v2/keys/consul.io/bootstrap/machines/"
 
 function leave-cluster {
-  ${etcdctl} rm /consul.io/bootstrap/machines/${this_machine} || true
-  consul leave || true
-  # work around a Docker / Consul interaction bug that makes quickly-restarted containers not sync
-  ${conntrack} -F
+  ${etcdcurl}${this_machine} -XDELETE
+  /bin/consul leave || true
+  sleep 5
 }
 
 trap leave-cluster EXIT
 
-${etcdctl} ls /consul.io/bootstrap/machines || ${etcdctl} mkdir /consul.io/bootstrap/machines
+$etcdcurl -XPUT -d dir=true
 
-nodes=( $(${etcdctl} ls /consul.io/bootstrap/machines) )
+first_node_value="$(${etcdcurl} | jq '.node.nodes[0].value' | tr -d "\"")"
 
-if [[ ${#nodes[@]} > 0 ]]; then
-  first_node=${nodes[0]}
-  join_ip=$(${etcdctl} get ${first_node})
-  join_arg="--join ${join_ip}"
+if [[ "$first_node_value" != "null" ]]; then
+  join_arg="--join ${first_node_value}"
 fi
 
-${etcdctl} set /consul.io/bootstrap/machines/${this_machine} ${this_ip} > /dev/null
+${etcdcurl}${this_machine} -XPUT -d value=${this_ip}
 
-/bin/start --server --bootstrap-expect 3 --advertise ${this_ip} ${join_arg} $@
+/bin/consul agent -server \
+            -bootstrap-expect 3 \
+            -advertise ${this_ip} \
+            -client 0.0.0.0 \
+            -ui-dir /ui \
+            -data-dir /data/ \
+            ${join_arg} $@

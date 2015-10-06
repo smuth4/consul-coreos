@@ -1,13 +1,10 @@
-FROM progrium/consul:latest
-MAINTAINER Democracy Works, Inc. <dev@democracy.works>
+FROM voxxit/consul
 
-ENV GOMAXPROCS 10
-ENV DOCKER_VERSION 1.5.0
+RUN apk update \
+  && apk add jq curl
 
-ADD https://get.docker.io/builds/Linux/x86_64/docker-${DOCKER_VERSION} /bin/docker
-RUN chmod +x /bin/docker
+RUN rm -rf /var/cache/apk/*
 
-COPY ./etcd-bootstrap /bin/etcd-bootstrap
+ADD etcd-bootstrap /bin/etcd-bootstrap
 
-ENTRYPOINT ["/bin/etcd-bootstrap"]
-CMD []
+ENTRYPOINT [ "/bin/etcd-bootstrap" ]
